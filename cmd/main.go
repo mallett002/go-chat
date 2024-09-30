@@ -9,7 +9,10 @@ import (
 )
 
 var (
-	upgrader = websocket.Upgrader{}
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
 )
 
 func socket(context echo.Context) error {
@@ -22,12 +25,13 @@ func socket(context echo.Context) error {
 
 	for {
 		// write
+		// this should be from the ai:
 		err := ws.WriteMessage(websocket.TextMessage, []byte("howdy, client!"))
 		if err != nil {
 			context.Logger().Error(err)
 		}
 
-		// read
+		// read (this is from the FE "user input")
 		msgType, msg, err := ws.ReadMessage()
 		if err != nil {
 			context.Logger().Error(err)
