@@ -9,6 +9,9 @@
 <body>
   <p id="output"></p>
 
+  <input id="messageInput" type="text" placeholder="Type your message here..." />
+  <button id="sendButton">Send</button>
+
   <script>
     const loc = window.location;
     let uri = 'ws:';
@@ -23,7 +26,7 @@
     ws = new WebSocket(uri)
 
     ws.onopen = function() {
-      console.log('Connected')
+      console.log('Connected to websocket!')
     }
 
     ws.onmessage = function(evt) {
@@ -31,9 +34,31 @@
       out.innerHTML += evt.data + '<br>';
     }
 
-    // setTimeout(function() {
-    //   ws.send('Hello, Server!');
-    // }, 1000);
+    // send message when user clicks "Send" btn
+    const sendButton = document.getElementById('sendButton');
+    const messageInput = document.getElementById('messageInput');
+
+    // when clicking submit
+    sendButton.onclick = function() {
+      sendMessage();
+    }
+
+    // when pressing "Enter" key
+    messageInput.addEventListener("keyup", function(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    function sendMessage() {
+      const message = messageInput.value;
+
+      if (message) {
+        ws.send(message);
+        messageInput.value = ''; // clear input
+      }
+    }
+
   </script>
 </body>
 

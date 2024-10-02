@@ -15,6 +15,8 @@ var (
 	}
 )
 
+var connectedClients = make(map[*websocket.Conn]bool)
+
 func socket(context echo.Context) error {
 	ws, err := upgrader.Upgrade(context.Response(), context.Request(), nil)
 	if err != nil {
@@ -23,23 +25,38 @@ func socket(context echo.Context) error {
 
 	defer ws.Close()
 
-	for {
-		// write
-		// this should be from the ai:
-		err := ws.WriteMessage(websocket.TextMessage, []byte("howdy, client!"))
-		if err != nil {
-			context.Logger().Error(err)
-		}
 
-		// read (this is from the FE "user input")
+	// For broadcasting to all clients, add this client to the connected clients list
+	connectedClients[ws] = true
+
+	for {
+		// read msg from user
 		msgType, msg, err := ws.ReadMessage()
 		if err != nil {
 			context.Logger().Error(err)
+			delete(connectedClients, ws) // remove this client from the list
+			break
 		}
+		
+		fmt.Printf("User sent: %s\n", msg)
 
-		fmt.Printf("messageType: %v\n", msgType)
-		fmt.Printf("message: %s\n", msg)
+		// // write back to same user
+		// err = ws.WriteMessage(msgType, msg)
+		// if err != nil {
+		// 	context.Logger().Error(err)
+		// 	break
+		// }
+
+		for client := range connectedClients {
+			if err := client.WriteMessage(msgType, msg); err != nil {
+				context.Logger().Error(err)
+				client.Close() // close connection
+				delete(connectedClients, client) // remove client from list
+			}
+		}
 	}
+
+	return nil
 }
 
 func main() {
